@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat IA avec Mixtral-8x7B</title>
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Google Font for Rounded Style -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- SweetAlert2 for popups -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <style>
+        /* General Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1e1e1e;
+            margin: 0;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #chatContainer {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Navbar Styling */
+        #navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #2b2b2b;
+        }
+
+        #navbar h1 {
+            font-size: 1.8em;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        #navbar ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+            padding: 0;
+        }
+
+        #navbar ul li {
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        #navbar ul li i {
+            margin-right: 8px;
+        }
+
+        /* Coming Soon Section */
+        #comingSoon {
+            background-color: #252525;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            color: #f0bf87;
+            border-bottom: 2px solid #3d3d3d;
+        }
+
+        /* Messages Section */
+        #messages {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #2b2b2b;
+            overflow-y: auto;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 15px;
+            border-radius: 25px;
+            display: inline-block;
+            font-size: 1.1em;
+            opacity: 0;
+        }
+
+        .message.user {
+            background-color: #f0bf87;
+            margin-left: auto;
+        }
+
+        .message.bot {
+            background-color: #a6a6a6;
+        }
+
+        .message.error {
+            background-color: #ffdddd;
+            color: red;
+        }
+
+        /* Input Section */
+        #inputContainer {
+            display: flex;
+            padding: 20px;
+            background-color: #2b2b2b;
+            align-items: center;
+            border-top: 2px solid #3d3d3d;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 25px;
+            outline: none;
+            background-color: #1e1e1e;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        #sendBtn {
+            padding: 15px 25px;
+            border: none;
+            background-color: #f0bf87;
+            color: #1e1e1e;
+            cursor: pointer;
+            margin-left: 15px;
+            border-radius: 25px;
+            font-size: 1.1em;
+        }
+
+        /* Popups for confirmations */
+        .popup {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            display: none;
+        }
+
+        .popup p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .popup button {
+            padding: 5px 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .popup .yes {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .popup .no {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="chatContainer">
+        <!-- Navigation Bar -->
+        <nav id="navbar">
+            <h1>APP TITLE</h1>
+            <ul>
+                <li><i class="fas fa-home"></i> Home</li>
+                <li><i class="fas fa-plug"></i> Plugins</li>
+                <li><i class="fas fa-user"></i> Account</li>
+            </ul>
+        </nav>
+
+        <!-- Coming Soon Section -->
+        <div id="comingSoon">
+            🚧 Coming Soon: Exciting Features in Development! 🚧
+        </div>
+
+        <!-- Messages Section -->
+        <div id="messages">
+            <!-- Messages will appear here -->
+        </div>
+
+        <!-- Input Section -->
+        <div id="inputContainer">
+            <input type="text" id="userInput" placeholder="ask bob...">
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Popup for Google Query -->
+    <div id="confirmationPopup" class="popup">
+        <p>Voulez-vous ouvrir la recherche Google pour cette requête ?</p>
+        <button class="yes">Oui</button>
+        <button class="no">Non</button>
+    </div>
+
+    <!-- Link Confirmation Popup -->
+    <div id="linkPopup" class="popup">
+        <p>Voulez-vous ouvrir <span id="linkName"></span> ?</p>
+        <button class="yes">Oui</button>
+        <button class="no">Non</button>
+    </div>
+
+    <!-- FontAwesome Script for Icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+
+    <!-- SweetAlert2 for Popup -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Anime.js for Animations -->
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+
+    <script>
+        const apiKey = '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'; // API Key Hugging Face
+        const model = 'mistralai/Mistral-Nemo-Instruct-2407'; // Model
+        const apiUrl = `https://api-inference.huggingface.co/models/${model}`;
+
+        const messagesDiv = document.getElementById('messages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const confirmationPopup = document.getElementById('confirmationPopup');
+        const linkPopup = document.getElementById('linkPopup');
+        const linkName = document.getElementById('linkName');
+        let confirmationTimer;
+        let googleQuery = '';
+        let linkUrl = '';
+
+        let history = ''; // Message history
+        const instruction = 'Vous êtes un assistant qui répond uniquement aux questions posées...';
+        const maxTokens = 32768;
+
+        function addMessage(text, sender) {
+            const message = document.createElement('div');
+            message.classList.add('message', sender);
+            message.innerHTML = text; // Assumes no markdown
+            messagesDiv.appendChild(message);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Animation with Anime.js
+            anime.timeline()
+                .add({
+                    targets: message,
+                    backgroundColor: '#d700ff',
+                    duration: 500,
+                    easing: 'easeInOutQuad'
+                })
+                .add({
+                    targets: message,
+                    backgroundColor: sender === 'user' ? '#f0bf87' : '#a6a6a6',
+                    duration: 500,
+                    easing: 'easeInOutQuad'
+                })
+                .add({
+                    targets: message,
+                    opacity: 1,
+                    duration: 500,
+                    easing: 'easeInOutQuad'
+                });
+        }
+
+        function showConfirmationPopup(query) {
+            googleQuery = query;
+            confirmationPopup.style.display = 'block';
+
+            confirmationTimer = setTimeout(() => {
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`, '_blank');
+                confirmationPopup.style.display = 'none';
+            }, 5000);
+        }
+
+        function hideConfirmationPopup() {
+            clearTimeout(confirmationTimer);
+            confirmationPopup.style.display = 'none';
+            linkPopup.style.display = 'none';
+        }
+
+        function showLinkPopup(name, url) {
+            linkName.textContent = name;
+            linkUrl = url;
+            linkPopup.style.display = 'block';
+        }
+
+        sendBtn.addEventListener('click', async () => {
+            const userText = userInput.value.trim();
+            if (userText === '') return;
+
+            addMessage(userText, 'user');
+            userInput.value = '';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        inputs: {
+                            past_user_inputs: [history],
+                            text: userText,
+                            instruction: instruction
+                        },
+                        options: { wait_for_model: true },
+                        parameters: { max_tokens: maxTokens }
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    addMessage('API Error: ' + data.error, 'bot');
+                    return;
+                }
+
+                const botReply = data.generated_text.trim();
+                addMessage(botReply, 'bot');
+
+                history += `\nUser: ${userText}\nBot: ${botReply}`;
+
+                if (botReply.includes('Google')) {
+                    showConfirmationPopup(userText);
+                }
+
+                if (botReply.includes('lien')) {
+                    showLinkPopup('link', 'https://example.com');
+                }
+            } catch (error) {
+                addMessage('Erreur lors de la communication avec l\'API.', 'error');
+            }
+        });
+
+        // Popup confirmation listeners
+        document.querySelectorAll('.popup .yes').forEach(yesBtn => {
+            yesBtn.addEventListener('click', () => {
+                if (googleQuery) {
+                    window.open(`https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`, '_blank');
+                } else if (linkUrl) {
+                    window.open(linkUrl, '_blank');
+                }
+                hideConfirmationPopup();
+            });
+        });
+
+        document.querySelectorAll('.popup .no').forEach(noBtn => {
+            noBtn.addEventListener('click', hideConfirmationPopup);
+        });
+    </script>
+</body>
+
+</html>
